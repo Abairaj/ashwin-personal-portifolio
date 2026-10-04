@@ -2,7 +2,10 @@ import { defineMiddleware } from 'astro:middleware';
 import { SESSION_COOKIE, verifySession } from './lib/auth';
 
 const notFound = () => new Response('Not found', { status: 404 });
-const hostOnly = (value: string | null) => (value ?? '').split(':')[0].toLowerCase();
+const hostOnly = (value: string | null) => (value ?? '').split(',')[0].trim().split(':')[0].toLowerCase();
+
+// The host name the visitor used. A hosting proxy may pass it in X-Forwarded-Host.
+const requestHost = (headers: Headers) => hostOnly(headers.get('x-forwarded-host') ?? headers.get('host'));
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
@@ -13,7 +16,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // that host serves nothing but the admin area and the files it needs.
   const adminHost = process.env.ADMIN_HOST?.toLowerCase();
   if (adminHost) {
-    const onAdminHost = hostOnly(headers.get('host')) === adminHost;
+    const onAdminHost = requestHost(headers) === adminHost;
     if (isAdminPath && !onAdminHost) return notFound();
     if (onAdminHost && !isAdminPath) {
       if (pathname === '/') return context.redirect('/admin/');
@@ -27,7 +30,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Changes must come from the admin pages themselves, not from another site.
   if (method !== 'GET' && method !== 'HEAD') {
     const origin = headers.get('origin');
-    if (!origin || new URL(origin).host !== headers.get('host')) {
+    if (!origin || hostOnly(new URL(origin).host) !== requestHost(headers)) {
       return new Response('Forbidden', { status: 403 });
     }
   }

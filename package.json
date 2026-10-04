@@ -6,9 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "start": "node --env-file-if-exists=.env dist/server/entry.mjs",
+    "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "db:local": "node scripts/dev-db.mjs",
-    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
     "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
@@ -25,14 +24,13 @@
     "@tiptap/extension-placeholder": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
     "astro": "^7.3.5",
-    "pg": "^8.23.1",
+    "mysql2": "^3.24.5",
     "sanitize-html": "^2.18.0",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1",
     "@types/sanitize-html": "^2.16.2",
-    "embedded-postgres": "^18.4.0-beta.17"
+    "mysql-memory-server": "^1.16.0"
   },
   "engines": {
     "node": ">=22.12.0"

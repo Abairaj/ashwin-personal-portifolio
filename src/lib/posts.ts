@@ -1,6 +1,6 @@
 import { readingTime } from '../config';
 import { slugify } from '../slug';
-import { query } from './db';
+import { query, type WriteResult } from './db';
 import { cleanImageUrl, sanitizeContent, textOnly } from './sanitize';
 
 export interface Post {
@@ -26,7 +26,7 @@ interface Row {
   category: string;
   cover: string | null;
   content: string;
-  published: boolean;
+  published: number;
   published_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -40,18 +40,16 @@ const toPost = (row: Row): Post => ({
   category: row.category,
   cover: row.cover,
   content: row.content,
-  published: row.published,
+  published: Boolean(row.published),
   date: row.published_at ?? row.created_at,
   updated: row.updated_at,
   minutes: readingTime(textOnly(row.content)),
 });
 
+const select = (where: string, params: unknown[] = []) => query<Row[]>(`SELECT * FROM posts ${where}`, params);
+
 export async function listPublished(limit = 500) {
-  const { rows } = await query<Row>(
-    'SELECT * FROM posts WHERE published ORDER BY published_at DESC, id DESC LIMIT $1',
-    [limit],
-  );
-  return rows.map(toPost);
+  return (await select('WHERE published = 1 ORDER BY published_at DESC, id DESC LIMIT ?', [limit])).map(toPost);
 }
 
 // For public pages that should still render if the database is unreachable.
@@ -65,18 +63,17 @@ export async function listPublishedOrEmpty(limit?: number) {
 }
 
 export async function getPublishedBySlug(slug: string) {
-  const { rows } = await query<Row>('SELECT * FROM posts WHERE published AND slug = $1', [slug]);
-  return rows[0] ? toPost(rows[0]) : null;
+  const [row] = await select('WHERE published = 1 AND slug = ?', [slug]);
+  return row ? toPost(row) : null;
 }
 
 export async function listAll() {
-  const { rows } = await query<Row>('SELECT * FROM posts ORDER BY updated_at DESC');
-  return rows.map(toPost);
+  return (await select('ORDER BY updated_at DESC, id DESC')).map(toPost);
 }
 
 export async function getById(id: number) {
-  const { rows } = await query<Row>('SELECT * FROM posts WHERE id = $1', [id]);
-  return rows[0] ? toPost(rows[0]) : null;
+  const [row] = await select('WHERE id = ?', [id]);
+  return row ? toPost(row) : null;
 }
 
 export class InvalidPost extends Error {}
@@ -100,7 +97,7 @@ function normalise(input: Record<string, unknown>) {
 
 async function uniqueSlug(title: string) {
   const base = slugify(title).slice(0, 80) || 'post';
-  const { rows } = await query<{ slug: string }>('SELECT slug FROM posts WHERE slug = $1 OR slug LIKE $2', [
+  const rows = await query<{ slug: string }[]>('SELECT slug FROM posts WHERE slug = ? OR slug LIKE ?', [
     base,
     `${base}-%`,
   ]);
@@ -113,31 +110,39 @@ async function uniqueSlug(title: string) {
 
 export async function createPost(input: Record<string, unknown>) {
   const post = normalise(input);
-  const { rows } = await query<Row>(
-    `INSERT INTO posts (slug, title, description, category, cover, content, published, published_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $7 THEN now() END)
-     RETURNING *`,
-    [await uniqueSlug(post.title), post.title, post.description, post.category, post.cover, post.content, post.published],
+  const { insertId } = await query<WriteResult>(
+    `INSERT INTO posts
+       (slug, title, description, category, cover, content, published, published_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, IF(?, UTC_TIMESTAMP(), NULL), UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
+    [
+      await uniqueSlug(post.title),
+      post.title,
+      post.description,
+      post.category,
+      post.cover,
+      post.content,
+      post.published,
+      post.published,
+    ],
   );
-  return toPost(rows[0]);
+  return (await getById(insertId))!;
 }
 
 // The slug (and so the public address) is kept when a post is edited.
 export async function updatePost(id: number, input: Record<string, unknown>) {
   const post = normalise(input);
-  const { rows } = await query<Row>(
+  await query<WriteResult>(
     `UPDATE posts
-     SET title = $2, description = $3, category = $4, cover = $5, content = $6, published = $7,
-         published_at = CASE WHEN $7 THEN COALESCE(published_at, now()) ELSE published_at END,
-         updated_at = now()
-     WHERE id = $1
-     RETURNING *`,
-    [id, post.title, post.description, post.category, post.cover, post.content, post.published],
+     SET title = ?, description = ?, category = ?, cover = ?, content = ?, published = ?,
+         published_at = IF(? AND published_at IS NULL, UTC_TIMESTAMP(), published_at),
+         updated_at = UTC_TIMESTAMP()
+     WHERE id = ?`,
+    [post.title, post.description, post.category, post.cover, post.content, post.published, post.published, id],
   );
-  return rows[0] ? toPost(rows[0]) : null;
+  return getById(id);
 }
 
 export async function deletePost(id: number) {
-  const { rowCount } = await query('DELETE FROM posts WHERE id = $1', [id]);
-  return Boolean(rowCount);
+  const { affectedRows } = await query<WriteResult>('DELETE FROM posts WHERE id = ?', [id]);
+  return affectedRows > 0;
 }

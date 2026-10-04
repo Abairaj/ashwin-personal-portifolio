@@ -1,17 +1,20 @@
 # Ashwin Raj K — Portfolio
 
 An [Astro](https://astro.build) site running as a Node.js server, with blog posts stored in
-PostgreSQL and written through a built-in admin area.
+MySQL and written through a built-in admin area.
 
 ## Run locally
 
 ```sh
 npm install
 cp .env.example .env     # then fill in; see "Local settings" below
-npm run db:local         # terminal 1: starts a local PostgreSQL (no install needed)
-npm run db:migrate       # once: creates the tables
+npm run db:local         # terminal 1: starts a temporary local MySQL (no install needed)
 npm run dev              # terminal 2: http://localhost:4321
 ```
+
+The local database from `npm run db:local` is temporary: its posts are erased when you stop it.
+Its first start downloads MySQL and takes a few minutes. To keep local data, install MySQL
+yourself and point the `DB_*` settings at it.
 
 ### Local settings
 
@@ -20,13 +23,19 @@ In `.env` for local work:
 ```ini
 SITE_URL=http://localhost:4321
 ADMIN_HOST=
-DATABASE_URL=postgres://postgres:postgres@localhost:5433/portfolio
+DB_HOST=127.0.0.1
+DB_PORT=3307
+DB_NAME=portfolio
+DB_USER=root
+DB_PASSWORD=
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=      # paste the output of: npm run hash-password
 SESSION_SECRET=           # any long random string
+UPLOAD_DIR=./uploads
 ```
 
 With `ADMIN_HOST` empty, the admin area is at http://localhost:4321/admin/.
+The database tables are created automatically the first time the app talks to the database.
 
 ## Writing posts
 
@@ -51,14 +60,15 @@ A post's web address is made from its title when it is first saved and does not 
 | Admin pages and editor | `src/pages/admin/`, `src/components/Editor.astro` |
 | Post API, uploads | `src/pages/api/admin/`, `src/pages/uploads/` |
 | Login, sessions, admin-host rule | `src/lib/auth.ts`, `src/middleware.ts` |
-| Database access | `src/lib/posts.ts`, `db/schema.sql` |
+| Database access | `src/lib/db.ts`, `src/lib/posts.ts`, `db/schema.sql` |
 | Site-wide text and links | `src/config.ts` |
 
-Uploaded images are converted to WebP and stored in `UPLOAD_DIR` on the server.
+Uploaded images are converted to WebP and stored in `UPLOAD_DIR`, which on the server must be
+outside the deployed app folder.
 
 ## Hosting
 
-Step-by-step guide for a Hostinger VPS: [DEPLOY.md](DEPLOY.md).
+Step-by-step guide for Hostinger (Cloud Startup, Node.js web app + MySQL): [DEPLOY.md](DEPLOY.md).
 
 ## Before launch
 

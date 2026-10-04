@@ -16,8 +16,10 @@ if (Astro.locals.admin) return Astro.redirect('/admin/');
 let error = isConfigured() ? '' : 'The admin account is not set up yet. See DEPLOY.md.';
 
 if (Astro.request.method === 'POST' && isConfigured()) {
-  // nginx passes the visitor's address in X-Real-IP (see DEPLOY.md).
-  const address = Astro.request.headers.get('x-real-ip') ?? Astro.clientAddress;
+  // Behind the host's proxy the visitor's address arrives in a header.
+  const headers = Astro.request.headers;
+  const address =
+    headers.get('x-real-ip') ?? headers.get('x-forwarded-for')?.split(',')[0].trim() ?? Astro.clientAddress;
   const form = await Astro.request.formData();
   if (isLockedOut(address)) {
     error = 'Too many attempts. Please wait 15 minutes and try again.';

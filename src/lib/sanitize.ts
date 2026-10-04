@@ -21,5 +21,6 @@ export const textOnly = (html: string) =>
 // Accepts an uploaded image path or an https image link; anything else is dropped.
 export function cleanImageUrl(value: unknown) {
   const url = typeof value === 'string' ? value.trim() : '';
-  return /^\/uploads\/[\w-]+\.webp$/.test(url) || /^https:\/\/[^\s"'<>]+$/.test(url) ? url : null;
+  const ok = /^\/uploads\/[\w-]+\.webp$/.test(url) || /^https:\/\/[^\s"'<>]+$/.test(url);
+  return ok && url.length <= 500 ? url : null;
 }
