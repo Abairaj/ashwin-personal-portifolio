@@ -1,0 +1,384 @@
+---
+import '@fontsource/noto-serif-malayalam/malayalam-700.css';
+import { Image } from 'astro:assets';
+import sample from '../assets/sample.jpg';
+import Icon from '../components/Icon.astro';
+import PostGrid from '../components/PostGrid.astro';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../config';
+import { getPosts } from '../posts';
+
+const posts = (await getPosts()).slice(0, 12);
+
+const index = ['Businesses', 'Ideas', 'People', 'Writing', 'A Better Tomorrow'];
+
+const stats = [
+  { value: '8+', label: 'Years of Experience', icon: 'building' },
+  { value: '5+', label: 'Businesses', icon: 'layers' },
+  { value: '100+', label: 'Projects & Clients', icon: 'users' },
+  { value: '2', label: 'States / Markets', icon: 'pin' },
+] as const;
+
+const journey = [
+  { year: '2018', title: 'The Beginning', text: 'Early learnings & first steps' },
+  { year: '2019', title: 'First Business', text: 'Creatif Digital Solutions (Ernakulam)' },
+  { year: '2020', title: 'Published My Book', text: 'Kozhinja Ravukalile Vasantham' },
+  { year: '2021 – 2023', title: 'Expansion & Growth', text: 'Multiple projects and new ventures' },
+  { year: '2024 – 2025', title: 'Multiple Businesses', text: 'Group operations and new opportunities' },
+  { year: '2026', title: 'Next Chapter', text: 'Technology, AI and global vision' },
+];
+
+const reasons = [
+  { icon: 'briefcase', label: 'Business Opportunities' },
+  { icon: 'mic', label: 'Speaking Invitations' },
+  { icon: 'camera', label: 'Media Interviews' },
+  { icon: 'handshake', label: 'Collaborations & Partnerships' },
+] as const;
+
+const sameAs = Object.values(SITE.social).filter(Boolean);
+const siteUrl = Astro.site!.href;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: siteUrl,
+    description: SITE.description,
+    inLanguage: 'en',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': `${siteUrl}#person`,
+    name: SITE.name,
+    url: siteUrl,
+    jobTitle: 'Entrepreneur & Business Strategist',
+    description: SITE.description,
+    address: { '@type': 'PostalAddress', addressLocality: 'Bangalore', addressCountry: 'IN' },
+    knowsAbout: ['Entrepreneurship', 'Business Strategy', 'Construction', 'Real Estate', 'Technology', 'Artificial Intelligence'],
+    ...(sameAs.length ? { sameAs } : {}),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    name: 'Kozhinja Ravukalile Vasantham',
+    alternateName: 'കൊഴിഞ്ഞ രാവുകളിലെ വസന്തം',
+    author: { '@id': `${siteUrl}#person` },
+    datePublished: '2020',
+    inLanguage: 'ml',
+  },
+];
+---
+
+<Base jsonLd={jsonLd}>
+  <section class="hero" id="home">
+    <div class="container hero__grid">
+      <div class="hero__copy">
+        <p class="eyebrow hero__roles">Entrepreneur<br />Business Strategist<br />Builder</p>
+        <div class="hero__main">
+          <ol class="hero__index" aria-hidden="true">
+            {index.map((item, i) => (
+              <li class:list={{ 'is-active': i === 0 }}><span>0{i + 1}</span>{item}</li>
+            ))}
+          </ol>
+          <div>
+            <h1>
+              <span class="sr-only">{SITE.name} — </span>Ideas<br />Into<br /><span class="grad-text">Action.</span>
+            </h1>
+            <p class="lead">
+              I build businesses, systems and ideas that create long-term value across infrastructure, technology,
+              creative industries and real estate.
+            </p>
+            <div class="actions">
+              <a class="btn" href="#businesses">Explore My Work <Icon name="arrow" size={16} /></a>
+              <a class="link" href="/writing/"><Icon name="lines" size={16} /> Read My Writing</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__visual">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="media media--bw hero__img">
+          <Image
+            src={sample}
+            alt={`${SITE.name}, entrepreneur and business strategist`}
+            widths={[480, 720, 1080]}
+            sizes="(min-width: 900px) 520px, 100vw"
+            width={1080}
+            height={1200}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+        <p class="hero__card script" aria-hidden="true">Building Businesses Beyond Limits</p>
+        <span class="eyebrow hero__est">Est. 2018</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Numbers that matter">
+    <div class="media media--bw stats__bg" aria-hidden="true">
+      <Image src={sample} alt="" widths={[800, 1600]} sizes="100vw" width={1600} height={500} />
+    </div>
+    <div class="container">
+      <dl class="stats__list">
+        {stats.map((s) => (
+          <div class="stat">
+            <span class="stat__icon grad-text"><Icon name={s.icon} size={28} /></span>
+            <dd>{s.value}</dd>
+            <dt>{s.label}</dt>
+          </div>
+        ))}
+        <div class="stat stat--place">
+          <dt class="eyebrow">Based in</dt>
+          <dd class="eyebrow">{SITE.location}</dd>
+        </div>
+      </dl>
+      <blockquote class="stats__quote">
+        <span class="grad-text"><Icon name="quote" size={30} /></span>
+        <p>Progress is not an event, but a series of disciplined decisions.</p>
+        <footer>— {SITE.name}</footer>
+      </blockquote>
+    </div>
+  </section>
+
+  <section class="section about" id="about">
+    <div class="container about__grid">
+      <aside class="about__aside">
+        <p class="eyebrow">People<br />Ideas<br />Execution<br />A Better<br />Tomorrow</p>
+        <blockquote>
+          <span class="grad-text"><Icon name="quote" size={26} /></span>
+          <p>I am interested in building things that outlive me.</p>
+        </blockquote>
+      </aside>
+      <div class="media media--bw about__img">
+        <Image
+          src={sample}
+          alt={`Portrait of ${SITE.name}`}
+          widths={[400, 700]}
+          sizes="(min-width: 900px) 340px, 100vw"
+          width={700}
+          height={820}
+        />
+      </div>
+      <div class="about__copy">
+        <p class="eyebrow">About Me</p>
+        <h2>Curious About Businesses, People And Possibilities.</h2>
+        <p>
+          I am an entrepreneur and business strategist focused on building businesses, systems and opportunities
+          across construction, interiors, technology, creative services and real estate. My journey has given me a
+          practical perspective on what it takes to turn ideas into operating businesses, and a deep interest in how
+          businesses can evolve beyond their founders.
+        </p>
+        <a class="btn btn--outline" href="#journey">More About Me <Icon name="arrow" size={16} /></a>
+      </div>
+      <div class="about__tags" aria-hidden="true">
+        <p class="eyebrow">Founder<br />Author<br />Builder<br />Learner</p>
+        <span class="about__mono">AK</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section journey" id="journey">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">My Journey</p>
+          <h2 class="journey__title">8 Years.<br />Still Building.</h2>
+        </div>
+        <p>
+          From my first venture to a growing portfolio of businesses, this journey has been about learning, building
+          and creating opportunities — and there's much more to come.
+        </p>
+        <a class="btn btn--outline" href="#businesses">View My Businesses <Icon name="arrow" size={16} /></a>
+      </div>
+      <ol class="timeline">
+        {journey.map((step) => (
+          <li>
+            <h3>{step.year}</h3>
+            <p class="timeline__title">{step.title}</p>
+            <p>{step.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section businesses" id="businesses">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">My Businesses</p>
+          <h2>Ideas. Ventures. Impact.</h2>
+        </div>
+        <p>Businesses across infrastructure, technology, creative services, real estate and emerging opportunities.</p>
+        <a class="btn btn--outline" href="#contact">Work With Me <Icon name="arrow" size={16} /></a>
+      </div>
+
+      <ul class="biz-grid">
+        <li class="biz-card">
+          <div class="media media--dusk">
+            <Image src={sample} alt="" widths={[400, 640]} sizes="(min-width: 900px) 300px, 100vw" width={640} height={360} style="transform: scale(1.7); transform-origin: 20% 80%" />
+          </div>
+          <div class="biz-card__body">
+            <h3 class="script grad-text biz-card__script">Dream Rich</h3>
+            <p>Construction · Infrastructure<br />Interiors · Real Estate</p>
+            {SITE.businesses.dreamRich && (
+              <a class="link" href={SITE.businesses.dreamRich} rel="noopener">Visit Website <Icon name="arrow" size={15} /></a>
+            )}
+          </div>
+        </li>
+        <li class="biz-card">
+          <div class="media media--dusk">
+            <Image src={sample} alt="" widths={[400, 640]} sizes="(min-width: 900px) 300px, 100vw" width={640} height={360} style="transform: scale(1.7); transform-origin: 80% 60%" />
+          </div>
+          <div class="biz-card__body">
+            <h3><span class="biz-card__dot" aria-hidden="true"></span>Creatif <small>Group of Companies</small></h3>
+            <p>Technology · Digital Solutions<br />Creative Services · Business Support</p>
+            {SITE.businesses.creatif && (
+              <a class="link" href={SITE.businesses.creatif} rel="noopener">Visit Website <Icon name="arrow" size={15} /></a>
+            )}
+          </div>
+        </li>
+        <li class="biz-card">
+          <div class="media media--dusk">
+            <Image src={sample} alt="" widths={[400, 640]} sizes="(min-width: 900px) 300px, 100vw" width={640} height={360} style="transform: scale(1.7); transform-origin: 50% 20%" />
+          </div>
+          <div class="biz-card__body">
+            <h3><span class="grad-text"><Icon name="handshake" size={24} /></span>Other Ventures</h3>
+            <p>Hospitality · Imports &amp; Exports<br />Skill Development and more.</p>
+          </div>
+        </li>
+        <li class="biz-card biz-card--soon">
+          <p>More Ventures<br />In The Making.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section book" id="book">
+    <div class="container book__grid">
+      <div class="book__copy">
+        <p class="eyebrow">Author</p>
+        <h2>Kozhinja Ravukalile Vasantham</h2>
+        <p class="eyebrow book__date">Published — 2020</p>
+        <p>
+          A collection of thoughts, emotions and observations from different phases of life. Kozhinja Ravukalile
+          Vasantham became one of the earliest expressions of my journey beyond business.
+        </p>
+        {SITE.bookUrl && (
+          <div class="actions">
+            <a class="btn btn--outline" href={SITE.bookUrl} rel="noopener">Buy / Read <Icon name="arrow" size={16} /></a>
+          </div>
+        )}
+      </div>
+
+      <div class="book__cover media media--dusk">
+        <Image src={sample} alt="Cover of the book Kozhinja Ravukalile Vasantham by Ashwin Raj K" widths={[300, 600]} sizes="280px" width={600} height={860} style="transform: scale(1.7); transform-origin: 30% 50%" />
+        <p class="book__title" lang="ml">കൊഴിഞ്ഞ<br />രാവുകളിലെ<br />വസന്തം</p>
+        <p class="eyebrow book__author">{SITE.name}</p>
+      </div>
+
+      <blockquote class="book__quote">
+        <span class="grad-text"><Icon name="quote" size={30} /></span>
+        <p>Some stories are not about destinations, but about the person you become on the way.</p>
+        <footer class="eyebrow">— {SITE.name}</footer>
+      </blockquote>
+    </div>
+  </section>
+
+  <section class="section writing" id="writing">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Writing</p>
+          <h2>Thoughts, Lessons &amp; Observations.</h2>
+        </div>
+        <p>Ideas on business, entrepreneurship, technology, systems, infrastructure and life.</p>
+        <a class="btn btn--outline" href="/writing/">Read All Articles <Icon name="arrow" size={16} /></a>
+      </div>
+      <PostGrid posts={posts} limit={4} />
+    </div>
+  </section>
+
+  <section class="vision" aria-labelledby="vision-title">
+    <div class="media media--dusk vision__bg" aria-hidden="true">
+      <Image src={sample} alt="" widths={[800, 1600]} sizes="100vw" width={1600} height={600} style="transform: scale(1.7); transform-origin: 50% 35%" />
+    </div>
+    <div class="container vision__grid">
+      <div>
+        <p class="eyebrow">My Vision</p>
+        <h2 id="vision-title">A Better Tomorrow.</h2>
+      </div>
+      <div class="vision__copy">
+        <p>More businesses.<br />More possibilities.<br />More people.<br />A meaningful impact.</p>
+        <a class="btn btn--outline btn--dark" href="/writing/">Read My Thinking <Icon name="arrow" size={16} /></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact">
+    <div class="container contact__grid">
+      <div>
+        <p class="eyebrow">Let's Connect</p>
+        <h2>Build A Conversation.</h2>
+        <p>Open for business discussions, collaborations, podcasts, interviews and new opportunities.</p>
+      </div>
+
+      <ul class="contact__reasons">
+        {reasons.map((r) => (
+          <li><Icon name={r.icon} size={26} />{r.label}</li>
+        ))}
+      </ul>
+
+      <form class="form" data-contact-form data-endpoint={SITE.formEndpoint} data-email={SITE.email}>
+        <label><span class="sr-only">Name</span><input name="name" type="text" placeholder="Name" autocomplete="name" required /></label>
+        <label><span class="sr-only">Company</span><input name="company" type="text" placeholder="Company" autocomplete="organization" /></label>
+        <label class="form__wide"><span class="sr-only">Email or phone</span><input name="contact" type="text" placeholder="Email / Phone" required /></label>
+        <label class="form__wide">
+          <span class="sr-only">I'm reaching out for</span>
+          <select name="reason" required>
+            <option value="">I'm reaching out for</option>
+            {reasons.map((r) => <option>{r.label}</option>)}
+            <option>Something else</option>
+          </select>
+        </label>
+        <label class="form__wide"><span class="sr-only">Your message</span><textarea name="message" rows="3" placeholder="Your message..." required></textarea></label>
+        <button class="btn form__wide" type="submit">Send Message <Icon name="arrow" size={16} /></button>
+        <p class="form__status form__wide" role="status" data-status></p>
+      </form>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = form.querySelector<HTMLElement>('[data-status]')!;
+    const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    const { endpoint, email } = form.dataset;
+
+    if (!endpoint) {
+      const body = `${data.message}\n\n${data.name}${data.company ? `, ${data.company}` : ''}\n${data.contact}`;
+      location.href = `mailto:${email}?subject=${encodeURIComponent(data.reason)}&body=${encodeURIComponent(body)}`;
+      status.textContent = 'Opening your mail app to send the message…';
+      return;
+    }
+
+    status.textContent = 'Sending…';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      form.reset();
+      status.textContent = 'Thank you — your message has been sent.';
+    } catch {
+      status.textContent = `Something went wrong. Please email ${email} instead.`;
+    }
+  });
+</script>

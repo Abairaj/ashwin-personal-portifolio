@@ -1,0 +1,43 @@
+---
+import PostGrid from '../../components/PostGrid.astro';
+import Base from '../../layouts/Base.astro';
+import { SITE } from '../../config';
+import { getPosts } from '../../posts';
+
+const posts = await getPosts();
+
+const description =
+  'Articles by Ashwin Raj K on business, entrepreneurship, technology, AI, systems, construction and life.';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: `${SITE.name} — Writing`,
+    url: new URL('/writing/', Astro.site).href,
+    description,
+    author: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
+    blogPost: posts.map((post) => ({
+      '@type': 'BlogPosting',
+      headline: post.title,
+      url: new URL(`/writing/${post.id}/`, Astro.site).href,
+      datePublished: post.date.toISOString(),
+    })),
+  },
+];
+---
+
+<Base title="Writing — Thoughts, Lessons & Observations" description={description} jsonLd={jsonLd}>
+  <section class="section page-head">
+    <div class="container">
+      <p class="eyebrow">Writing</p>
+      <h1 class="page-title">Thoughts, Lessons &amp; Observations.</h1>
+      <p class="lead">Ideas on business, entrepreneurship, technology, systems, infrastructure and life.</p>
+    </div>
+  </section>
+  <section class="section section--tight">
+    <div class="container">
+      <PostGrid posts={posts} headingLevel="h2" />
+    </div>
+  </section>
+</Base>

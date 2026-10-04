@@ -1,0 +1,21 @@
+---
+import Icon from './Icon.astro';
+import { SITE } from '../config';
+
+const links = [
+  { name: 'linkedin', label: 'LinkedIn', href: SITE.social.linkedin },
+  { name: 'instagram', label: 'Instagram', href: SITE.social.instagram },
+  { name: 'youtube', label: 'YouTube', href: SITE.social.youtube },
+  { name: 'x', label: 'X', href: SITE.social.x },
+] as const;
+---
+
+<ul class="socials">
+  {links.map((link) => (
+    <li>
+      <a href={link.href || '#'} aria-label={`${SITE.name} on ${link.label}`} rel="me noopener">
+        <Icon name={link.name} size={20} />
+      </a>
+    </li>
+  ))}
+</ul>

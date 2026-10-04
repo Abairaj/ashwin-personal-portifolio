@@ -1,0 +1,83 @@
+---
+import { Image } from 'astro:assets';
+import { formatDate } from '../config';
+import type { Post } from '../posts';
+
+interface Props {
+  posts: Post[];
+  // Max cards visible at once; the rest stay in the DOM for filtering.
+  limit?: number;
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { posts, limit = Infinity, headingLevel: Heading = 'h3' } = Astro.props;
+// Chips come from the categories the posts actually use.
+const used = [...new Set(posts.map((p) => p.category))];
+---
+
+<div data-filter-root data-limit={Number.isFinite(limit) ? limit : undefined}>
+  <div class="chips" role="group" aria-label="Filter articles by category">
+    <button class="chip" type="button" aria-pressed="true" data-filter="All">All</button>
+    {used.map((c) => <button class="chip" type="button" aria-pressed="false" data-filter={c}>{c}</button>)}
+  </div>
+
+  <ul class="post-grid">
+    {posts.map((post, i) => (
+      <li class="post-card" data-category={post.category} hidden={i >= limit}>
+        <a href={`/writing/${post.id}/`}>
+          <div class="post-card__media">
+            <div class:list={['media', { 'media--dusk': !post.hasCover }]}>
+              {typeof post.cover === 'string' ? (
+                <img src={post.cover} alt="" loading="lazy" decoding="async" />
+              ) : (
+                <Image
+                  src={post.cover}
+                  alt=""
+                  widths={[320, 480, 640]}
+                  sizes="(min-width: 1000px) 300px, (min-width: 640px) 50vw, 100vw"
+                  width={640}
+                  height={400}
+                  style={post.hasCover ? undefined : `transform:scale(1.7);transform-origin:${(i * 37) % 100}% ${(i * 53) % 100}%`}
+                />
+              )}
+            </div>
+            <span class="post-card__tag">{post.category}</span>
+          </div>
+          <div class="post-card__body">
+            <Heading class="post-card__title">{post.title}</Heading>
+            <p>{post.description}</p>
+            <p class="post-card__meta">
+              <time datetime={post.date.toISOString()}>{formatDate(post.date)}</time>
+              <span aria-hidden="true">•</span>
+              {post.minutes} min read
+            </p>
+          </div>
+        </a>
+      </li>
+    ))}
+  </ul>
+  <p class="post-grid__empty" hidden data-empty>No articles in this category yet.</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-filter-root]').forEach((root) => {
+    const limit = Number(root.dataset.limit) || Infinity;
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-category]')];
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+
+    chips.forEach((chip) =>
+      chip.addEventListener('click', () => {
+        const category = chip.dataset.filter;
+        let shown = 0;
+        cards.forEach((card) => {
+          const match = (category === 'All' || card.dataset.category === category) && shown < limit;
+          if (match) shown++;
+          card.hidden = !match;
+        });
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        if (empty) empty.hidden = shown > 0;
+      }),
+    );
+  });
+</script>

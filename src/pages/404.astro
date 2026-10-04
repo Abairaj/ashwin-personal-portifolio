@@ -1,0 +1,18 @@
+---
+import Icon from '../components/Icon.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found" noindex>
+  <section class="section page-head">
+    <div class="container">
+      <p class="eyebrow">404</p>
+      <h1 class="page-title">This page doesn't exist.</h1>
+      <p class="lead">The link may be old, or the page may have moved.</p>
+      <div class="actions">
+        <a class="btn" href="/">Back Home <Icon name="arrow" size={16} /></a>
+        <a class="btn btn--outline" href="/writing/">Read My Writing <Icon name="arrow" size={16} /></a>
+      </div>
+    </div>
+  </section>
+</Base>

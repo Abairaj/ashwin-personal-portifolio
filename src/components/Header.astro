@@ -1,0 +1,63 @@
+---
+import Icon from './Icon.astro';
+import Socials from './Socials.astro';
+import { NAV, SITE } from '../config';
+
+const path = Astro.url.pathname;
+const isCurrent = (href: string) =>
+  href.startsWith('/#') ? path === '/' && href === '/#home' : path.startsWith(href);
+---
+
+<header class="header" data-header>
+  <div class="container header__bar">
+    <a class="logo" href="/" aria-label={`${SITE.name} — home`}>{SITE.name}</a>
+
+    <nav class="nav" aria-label="Primary">
+      {NAV.map((item) => (
+        <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a>
+      ))}
+    </nav>
+
+    <a class="btn header__cta" href="/#contact">Let's Connect <Icon name="arrow" size={16} /></a>
+
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-btn>
+      <span class="sr-only">Menu</span>
+      <span class="menu-btn__open"><Icon name="menu" size={20} /></span>
+      <span class="menu-btn__close"><Icon name="close" size={20} /></span>
+    </button>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" hidden data-menu>
+    <nav class="container" aria-label="Mobile">
+      <ul>
+        {NAV.map((item) => (
+          <li><a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a></li>
+        ))}
+      </ul>
+      <Socials />
+      <blockquote class="mobile-menu__quote">
+        <span class="grad-text"><Icon name="quote" size={30} /></span>
+        <p>Building businesses.<br />Empowering people.<br />Exploring possibilities.</p>
+        <footer class="script">{SITE.name}</footer>
+      </blockquote>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('[data-menu-btn]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+  const setOpen = (open: boolean) => {
+    if (!btn || !menu) return;
+    btn.setAttribute('aria-expanded', String(open));
+    menu.hidden = !open;
+    document.body.classList.toggle('menu-open', open);
+  };
+  btn?.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) setOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+</script>

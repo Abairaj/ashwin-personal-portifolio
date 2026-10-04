@@ -1,0 +1,87 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import Icon from '../../components/Icon.astro';
+import Base from '../../layouts/Base.astro';
+import { SITE, formatDate } from '../../config';
+import { getPosts } from '../../posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post.entry);
+const { title, description, date: pubDate, updated: updatedDate, category, cover } = post;
+const url = new URL(`/writing/${post.id}/`, Astro.site).href;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    datePublished: pubDate.toISOString(),
+    dateModified: (updatedDate ?? pubDate).toISOString(),
+    articleSection: category,
+    mainEntityOfPage: url,
+    author: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
+    publisher: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: Astro.site!.href },
+      { '@type': 'ListItem', position: 2, name: 'Writing', item: new URL('/writing/', Astro.site).href },
+      { '@type': 'ListItem', position: 3, name: title, item: url },
+    ],
+  },
+];
+---
+
+<Base
+  title={title}
+  description={description}
+  image={cover}
+  type="article"
+  article={{ publishedTime: pubDate, modifiedTime: updatedDate, section: category }}
+  jsonLd={jsonLd}
+>
+  <article class="article">
+    <header class="container article__head">
+      <nav class="eyebrow breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a> / <a href="/writing/">Writing</a> / <span>{category}</span>
+      </nav>
+      <h1 class="page-title">{title}</h1>
+      <p class="lead">{description}</p>
+      <p class="post-card__meta">
+        By {SITE.name}
+        <span aria-hidden="true">•</span>
+        <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time>
+        <span aria-hidden="true">•</span>
+        {post.minutes} min read
+      </p>
+    </header>
+
+    <div class="container">
+      <div class:list={['media', 'article__cover', { 'media--dusk': !post.hasCover }]}>
+        {typeof cover === 'string' ? (
+          <img src={cover} alt="" />
+        ) : (
+          <Image src={cover} alt="" widths={[640, 1000, 1600]} sizes="(min-width: 1240px) 1128px, 100vw" width={1600} height={700} loading="eager" />
+        )}
+      </div>
+    </div>
+
+    <div class="container prose">
+      <Content />
+    </div>
+
+    <footer class="container article__foot">
+      <a class="btn btn--outline" href="/writing/">All Articles <Icon name="arrow" size={16} /></a>
+      <a class="btn" href="/#contact">Let's Connect <Icon name="arrow" size={16} /></a>
+    </footer>
+  </article>
+</Base>
