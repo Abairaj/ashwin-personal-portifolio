@@ -10,7 +10,6 @@ npm install
 cp .env.example .env     # then fill in; see "Local settings" below
 npm run db:local         # terminal 1: starts a local PostgreSQL (no install needed)
 npm run db:migrate       # once: creates the tables
-npm run db:import        # once, optional: loads the sample posts
 npm run dev              # terminal 2: http://localhost:4321
 ```
 
@@ -65,4 +64,3 @@ Step-by-step guide for a Hostinger VPS: [DEPLOY.md](DEPLOY.md).
 
 - `src/config.ts` — email, social links, business URLs, book URL, optional form endpoint.
 - `src/assets/sample.jpg` — the placeholder photo used across the site and as the default post cover.
-- The five imported posts are samples; delete them in the admin area.

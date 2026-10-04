@@ -9,7 +9,6 @@
     "start": "node --env-file-if-exists=.env dist/server/entry.mjs",
     "db:local": "node scripts/dev-db.mjs",
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
-    "db:import": "node --env-file-if-exists=.env scripts/import-posts.mjs",
     "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
@@ -26,7 +25,6 @@
     "@tiptap/extension-placeholder": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
     "astro": "^7.3.5",
-    "marked": "^18.0.14",
     "pg": "^8.23.1",
     "sanitize-html": "^2.18.0",
     "sharp": "^0.35.5"
