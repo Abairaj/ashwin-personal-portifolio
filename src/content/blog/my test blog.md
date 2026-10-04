@@ -1,5 +1,5 @@
 ---
-title: Your Post Title
+title: My test blog
 date: 2026-10-04
 category: Business
 # cover: my-photo.jpg   (optional: an image link, or a file in the "images" folder; remove the # to use it)
