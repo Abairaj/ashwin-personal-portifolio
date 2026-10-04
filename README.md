@@ -39,7 +39,7 @@ Optional extras, on their own lines between the `---` markers:
 | --- | --- | --- |
 | `category: Marketing` | Label on the card and a filter chip. Any text works; new ones appear automatically. | `General` |
 | `description: ...` | Summary on cards and in search results. | First paragraph of the post |
-| `cover: my-photo.jpg` | Cover image: the name of an image file you put in `src/content/blog/images/`, or an image link (`https://...`). | Default image (`src/assets/sample.jpg`) |
+| `cover: images/my-photo.jpg` | Cover image: a file you put in `src/content/blog/images/`, or an image link (`https://...`). | Default image (`src/content/blog/images/default.jpg`) |
 | `draft: true` | Hides the post from the site. | Published |
 
 The page address comes from the file name: `My first_post.md` → `/writing/my-first-post/`.

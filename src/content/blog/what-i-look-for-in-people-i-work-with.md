@@ -3,6 +3,7 @@ title: What I Look for in People I Work With
 description: Values, mindset and traits that matter in the long run.
 date: 2026-08-18
 category: Life
+cover: images/default.jpg
 ---
 
 > Sample post — replace this text with your own writing.

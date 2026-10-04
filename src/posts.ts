@@ -1,6 +1,6 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import path from 'node:path';
-import sample from './assets/sample.jpg';
+import defaultCover from './content/blog/images/default.jpg';
 import { readingTime } from './config';
 
 export interface Post {
@@ -66,8 +66,9 @@ export async function getPosts(): Promise<Post[]> {
         date: (entry.data.date ?? entry.data.pubDate)!,
         updated: entry.data.updatedDate,
         category: entry.data.category?.trim() || 'General',
-        cover: cover ?? sample,
-        hasCover: Boolean(cover),
+        cover: cover ?? defaultCover,
+        // The default image gets the site's tinted treatment; real covers are shown as they are.
+        hasCover: Boolean(cover) && cover !== defaultCover,
         minutes: readingTime(entry.body),
       };
     })

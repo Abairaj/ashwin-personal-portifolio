@@ -3,6 +3,7 @@ title: How AI is Changing Business Operations
 description: Practical ways businesses can use AI today.
 date: 2026-09-20
 category: Technology & AI
+cover: images/default.jpg
 ---
 
 > Sample post — replace this text with your own writing.

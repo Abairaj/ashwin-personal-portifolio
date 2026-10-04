@@ -2,7 +2,9 @@
 title: Your Post Title
 date: 2026-10-04
 category: Business
-# cover: my-photo.jpg   (optional: an image link, or a file in the "images" folder; remove the # to use it)
+cover: images/default.jpg
+# To use your own cover, upload a picture to the "images" folder and write its name
+# above (images/my-photo.jpg), or paste an image link (https://...).
 ---
 
 <!--

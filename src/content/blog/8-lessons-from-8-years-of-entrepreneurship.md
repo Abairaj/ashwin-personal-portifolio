@@ -3,6 +3,7 @@ title: 8 Lessons from 8 Years of Entrepreneurship
 description: Key lessons, mistakes and realizations from my journey.
 date: 2026-10-01
 category: Business
+cover: images/default.jpg
 ---
 
 > Sample post — replace this text with your own writing.

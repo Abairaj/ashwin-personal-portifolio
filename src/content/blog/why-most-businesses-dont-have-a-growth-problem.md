@@ -3,6 +3,7 @@ title: Why Most Businesses Don't Have a Growth Problem
 description: It's rarely about ideas. It's about systems, execution and people.
 date: 2026-09-24
 category: Systems
+cover: images/default.jpg
 ---
 
 > Sample post — replace this text with your own writing.
