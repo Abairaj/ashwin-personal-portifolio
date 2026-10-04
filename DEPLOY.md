@@ -1,111 +1,185 @@
-# Hosting on GitHub Pages
+# Hosting on a Hostinger VPS
 
-GitHub builds and publishes the site automatically on every push; nothing has to be uploaded
-by hand. The address depends on the repository name:
+The site is one Node.js app with a PostgreSQL database. nginx sits in front of it and sends
+both the main domain and the admin subdomain to the app; the app only shows the admin area on
+the admin subdomain.
 
-| Repository name | Site address |
-| --- | --- |
-| `<username>.github.io` | `https://<username>.github.io` |
-| anything else, e.g. `ashwin-personal-portifolio` | `https://<username>.github.io/ashwin-personal-portifolio/` |
+Replace `example.com` with your domain throughout. Commands are for Ubuntu 22.04/24.04, run
+over SSH as a user with `sudo`.
 
-The build works this out by itself; nothing needs to be configured for either case.
-This project's repo is `Abairaj/ashwin-personal-portifolio`, so it is published at
-**https://abairaj.github.io/ashwin-personal-portifolio/**.
+## 1. Point the domains at the VPS
 
-Replace `<username>` and `<repo>` below with your own.
+In Hostinger's DNS zone editor, add **A records** to the VPS IP address for:
 
-## 1. Create the repository on GitHub
+- `example.com` (name `@`)
+- `www.example.com`
+- `admin.example.com`
 
-1. Sign in at [github.com](https://github.com) and press **+ → New repository**.
-2. **Repository name:** `<username>.github.io` for the short address, or any other name.
-3. **Visibility:** Public (GitHub Pages on a free account needs a public repo).
-4. Leave "Add a README", ".gitignore" and "license" **unticked**; the project already has them.
-5. Press **Create repository**.
-
-## 2. Push the project from your computer
-
-In a terminal, inside the project folder:
+## 2. Install Node.js, PostgreSQL and nginx
 
 ```sh
-git init -b main
-git add .
-git commit -m "Initial site"
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
+sudo apt update && sudo apt install -y nginx postgresql git
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v   # must be 22.12 or newer
 ```
 
-GitHub asks you to sign in the first time you push.
+## 3. Create the database
 
-## 3. Turn on GitHub Pages
+```sh
+sudo -u postgres psql -c "CREATE USER portfolio WITH PASSWORD 'choose-a-db-password';"
+sudo -u postgres psql -c "CREATE DATABASE portfolio OWNER portfolio;"
+```
 
-In the repository on github.com:
+## 4. Get the code and configure it
 
-1. **Settings → Pages**
-2. Under **Build and deployment → Source**, choose **GitHub Actions**.
+```sh
+sudo mkdir -p /var/www/portfolio && sudo chown $USER /var/www/portfolio
+git clone https://github.com/Abairaj/ashwin-personal-portifolio.git /var/www/portfolio
+cd /var/www/portfolio
+npm ci
+cp .env.example .env
+```
 
-GitHub then shows suggestion cards such as "GitHub Pages Jekyll" and "Static HTML", each with
-a **Configure** button. Ignore them and do not press Configure: they would add a second,
-wrong workflow. This project already has its own (`.github/workflows/deploy.yml`). The Source
-setting saves itself as soon as you pick it; there is nothing else to press on this page.
+Create the admin password hash and a session secret:
 
-The **Save** button further down belongs only to the **Custom domain** box. Leave that box
-empty; the site is served at its `github.io` address without it.
+```sh
+npm run hash-password      # type the password you want; copy the printed line
+openssl rand -hex 32       # copy the output
+```
 
-## 4. Allow the template file to be restored
+Edit `.env` (`nano .env`):
 
-The `next-blog.md` writing template is put back automatically after each post. For that:
+```ini
+SITE_URL=https://example.com
+ADMIN_HOST=admin.example.com
+DATABASE_URL=postgres://portfolio:choose-a-db-password@localhost:5432/portfolio
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=scrypt:...        # the line from hash-password
+SESSION_SECRET=...                    # the openssl output
+UPLOAD_DIR=/var/www/portfolio/uploads
+HOST=127.0.0.1
+PORT=4321
+```
 
-1. **Settings → Actions → General**
-2. Under **Workflow permissions**, choose **Read and write permissions** and press **Save**.
+Then:
 
-## 5. Run the first deploy
+```sh
+chmod 600 .env
+npm run build
+npm run db:migrate     # creates the tables
+npm run db:import      # optional: loads the five sample posts
+```
 
-The push in step 2 happened before Pages was switched on, so start the first deploy by hand:
+## 5. Keep the app running (systemd)
 
-1. Open the **Actions** tab.
-2. Choose **Deploy** in the left list → **Run workflow** → **Run workflow**.
-3. Wait for the green tick (about one to two minutes).
+`sudo nano /etc/systemd/system/portfolio.service`:
 
-The site is now live at the address from the table at the top.
+```ini
+[Unit]
+Description=Portfolio site
+After=network.target postgresql.service
 
-From here on, every push to `main` publishes by itself.
+[Service]
+WorkingDirectory=/var/www/portfolio
+ExecStart=/usr/bin/node --env-file=.env dist/server/entry.mjs
+Restart=always
+User=www-data
 
-## 6. Check it worked
+[Install]
+WantedBy=multi-user.target
+```
 
-- Open the site address, and the same address with `writing/` added at the end.
-- In the **Actions** tab, both **Deploy** and **Restore next-blog template** should show green ticks.
+```sh
+sudo chown -R www-data /var/www/portfolio/uploads 2>/dev/null || sudo install -d -o www-data /var/www/portfolio/uploads
+sudo chown www-data /var/www/portfolio/.env
+sudo systemctl enable --now portfolio
+sudo systemctl status portfolio      # should say "active (running)"
+```
 
-## Publishing a blog post
+## 6. nginx
 
-1. On github.com open `src/content/blog/next-blog.md` and press the pencil icon.
-2. Replace the title, category and text.
-3. Change the file name at the top from `next-blog.md` to your own, e.g. `my-first-post.md`.
-4. Press **Commit changes**.
+`sudo nano /etc/nginx/sites-available/portfolio`:
 
-The post is live in a minute or two, and a fresh `next-blog.md` appears for the next one.
+```nginx
+server {
+    listen 80;
+    server_name example.com www.example.com admin.example.com;
 
-## Letting other people post
+    client_max_body_size 12m;   # image uploads
 
-**Settings → Collaborators → Add people.** Anyone added there can publish posts the same way.
-Remove them there to take access away.
+    location / {
+        proxy_pass http://127.0.0.1:4321;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```sh
+sudo ln -s /etc/nginx/sites-available/portfolio /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+## 7. HTTPS
+
+```sh
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d example.com -d www.example.com -d admin.example.com
+```
+
+Certbot edits the nginx file and renews the certificates by itself.
+
+## 8. Firewall
+
+```sh
+sudo ufw allow OpenSSH && sudo ufw allow 'Nginx Full' && sudo ufw enable
+```
+
+PostgreSQL and the app listen only on the server itself, so nothing else needs opening.
+
+## 9. Check it
+
+- `https://example.com` shows the site; `https://example.com/admin/` shows "Not found".
+- `https://admin.example.com` shows the sign-in page. Sign in, write a post, press Publish,
+  and it appears on `https://example.com/writing/`.
+
+## Updating the site later
+
+```sh
+cd /var/www/portfolio
+git pull
+npm ci
+npm run build
+npm run db:migrate
+sudo systemctl restart portfolio
+```
+
+## Changing the admin password
+
+Run `npm run hash-password`, replace `ADMIN_PASSWORD_HASH` in `.env`, then
+`sudo systemctl restart portfolio`. Changing `SESSION_SECRET` signs everyone out.
+
+## Backups
+
+Two things hold your content: the database and the uploads folder.
+
+```sh
+pg_dump "postgres://portfolio:choose-a-db-password@localhost:5432/portfolio" > backup-$(date +%F).sql
+tar czf uploads-$(date +%F).tar.gz -C /var/www/portfolio uploads
+```
+
+Copy both files off the server. Hostinger's VPS snapshots are a good second layer.
 
 ## If something goes wrong
 
-| What you see | What to do |
+| What you see | Where to look |
 | --- | --- |
-| Red cross on **Deploy** | Open the run and read the failing step. The build needs Node 22, which `deploy.yml` sets with `node-version: 22`. A post with no `date:` line is the usual cause; the message says which file. |
-| Red cross on **Restore next-blog template** | Step 4 was skipped. Set workflow permissions to read and write, then re-run it. |
-| Site shows a 404 | Check step 3 is set to **GitHub Actions**, the **Deploy** run has a green tick, and you are using the address from the table at the top (including the repo name, if it has one). |
-| A new post does not appear | Check its file is not still named `next-blog.md`, and that it has no `draft: true` line. |
-
-## Using your own domain later
-
-1. **Settings → Pages → Custom domain**: enter the domain and follow GitHub's DNS instructions.
-2. In `.github/workflows/deploy.yml`, add to the `build` job:
-
-   ```yaml
-       env:
-         SITE_URL: https://yourdomain.com
-   ```
-
-   This makes the sitemap, RSS and search-engine tags use the new address.
+| 502 Bad Gateway | The app is not running: `sudo journalctl -u portfolio -n 50` |
+| Site loads but no posts | Database connection: check `DATABASE_URL` in `.env`, then the journal as above |
+| "The admin account is not set up yet" | `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` or `SESSION_SECRET` is empty in `.env` |
+| "Forbidden" when signing in | nginx is not passing `Host`; check the `proxy_set_header Host $host;` line |
+| Image upload fails for large files | `client_max_body_size` in the nginx file |
+| "Too many attempts" | Five wrong passwords; wait 15 minutes or restart the service |

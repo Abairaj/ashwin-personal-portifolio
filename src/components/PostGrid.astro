@@ -1,7 +1,8 @@
 ---
 import { Image } from 'astro:assets';
+import sample from '../assets/sample.jpg';
 import { formatDate, url } from '../config';
-import type { Post } from '../posts';
+import type { Post } from '../lib/posts';
 
 interface Props {
   posts: Post[];
@@ -24,20 +25,20 @@ const used = [...new Set(posts.map((p) => p.category))];
   <ul class="post-grid">
     {posts.map((post, i) => (
       <li class="post-card" data-category={post.category} hidden={i >= limit}>
-        <a href={url(`/writing/${post.id}/`)}>
+        <a href={url(`/writing/${post.slug}/`)}>
           <div class="post-card__media">
-            <div class:list={['media', { 'media--dusk': !post.hasCover }]}>
-              {typeof post.cover === 'string' ? (
+            <div class:list={['media', { 'media--dusk': !post.cover }]}>
+              {post.cover ? (
                 <img src={post.cover} alt="" loading="lazy" decoding="async" />
               ) : (
                 <Image
-                  src={post.cover}
+                  src={sample}
                   alt=""
                   widths={[320, 480, 640]}
                   sizes="(min-width: 1000px) 300px, (min-width: 640px) 50vw, 100vw"
                   width={640}
                   height={400}
-                  style={post.hasCover ? undefined : `transform:scale(1.7);transform-origin:${(i * 37) % 100}% ${(i * 53) % 100}%`}
+                  style={`transform:scale(1.7);transform-origin:${(i * 37) % 100}% ${(i * 53) % 100}%`}
                 />
               )}
             </div>

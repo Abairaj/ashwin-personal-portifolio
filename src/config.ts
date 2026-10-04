@@ -33,13 +33,14 @@ export const NAV = [
   { label: 'Contact', href: '/#contact' },
 ];
 
-// The site may be served from a sub-path (e.g. /repo-name/ on GitHub Pages),
-// so internal links go through url() instead of being written as "/…".
+// Internal links go through url() so the site also works if it is ever served
+// from a sub-path (Astro's `base` option).
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export const url = (path = '/') => `${BASE}${path}`;
 
-export const fullUrl = (path = '/') => new URL(url(path), import.meta.env.SITE).href;
+// SITE_URL is read when the server runs, so the address can change without a rebuild.
+export const fullUrl = (path = '/') => new URL(url(path), process.env.SITE_URL ?? import.meta.env.SITE).href;
 
 export function readingTime(body = '') {
   return Math.max(1, Math.round(body.split(/\s+/).filter(Boolean).length / 200));

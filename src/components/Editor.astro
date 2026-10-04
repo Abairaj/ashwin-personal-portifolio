@@ -1,0 +1,310 @@
+---
+// The writing surface used for both new and existing posts.
+import { listAll, type Post } from '../lib/posts';
+
+interface Props {
+  post?: Post;
+}
+
+const { post } = Astro.props;
+const categories = [...new Set((await listAll()).map((p) => p.category))];
+const siteUrl = (process.env.SITE_URL ?? '').replace(/\/$/, '');
+const initial = post
+  ? { id: post.id, slug: post.slug, published: post.published, cover: post.cover, content: post.content }
+  : { id: null, slug: null, published: false, cover: null, content: '' };
+---
+
+<div class="editor" data-editor data-initial={JSON.stringify(initial)} data-site={siteUrl}>
+  <div class="editor__bar">
+    <span class="admin-tag" data-state></span>
+    <span class="editor__status" role="status" data-status></span>
+    <button class="btn btn--outline" type="button" data-save="draft"></button>
+    <button class="btn" type="button" data-save="publish"></button>
+  </div>
+
+  <div class="editor__page">
+    <div class="editor__cover">
+      <img alt="" hidden data-cover-image />
+      <button type="button" data-cover-add>+ Add a cover image</button>
+      <button type="button" hidden data-cover-remove>Remove cover</button>
+    </div>
+
+    <textarea class="editor__title" rows="1" placeholder="Title" aria-label="Title" data-title>{post?.title}</textarea>
+
+    <div class="editor__meta">
+      <input type="text" placeholder="Category, e.g. Business" aria-label="Category" list="editor-categories" value={post?.category} data-category />
+      <datalist id="editor-categories">
+        {categories.map((category) => <option value={category} />)}
+      </datalist>
+      <input type="text" placeholder="Short summary (optional — the opening lines are used if empty)" aria-label="Short summary" value={post?.description} data-description />
+    </div>
+
+    <div class="editor__body" data-body></div>
+  </div>
+
+  <div class="editor-bubble" data-bubble>
+    <button type="button" data-command="bold" title="Bold"><b>B</b></button>
+    <button type="button" data-command="italic" title="Italic"><i>i</i></button>
+    <button type="button" data-command="h2" title="Large heading">T</button>
+    <button type="button" data-command="h3" title="Small heading"><small>T</small></button>
+    <button type="button" data-command="quote" title="Quote">“</button>
+    <button type="button" data-command="link" title="Link">Link</button>
+  </div>
+
+  <div class="editor-insert" data-insert>
+    <button type="button" data-command="image">Image</button>
+    <button type="button" data-command="h2">Heading</button>
+    <button type="button" data-command="quote">Quote</button>
+    <button type="button" data-command="list">List</button>
+    <button type="button" data-command="divider">Divider</button>
+  </div>
+
+  <input type="file" accept="image/*" hidden data-file />
+</div>
+
+<script>
+  import { Editor } from '@tiptap/core';
+  import BubbleMenu from '@tiptap/extension-bubble-menu';
+  import FloatingMenu from '@tiptap/extension-floating-menu';
+  import Image from '@tiptap/extension-image';
+  import Placeholder from '@tiptap/extension-placeholder';
+  import StarterKit from '@tiptap/starter-kit';
+
+  const root = document.querySelector<HTMLElement>('[data-editor]')!;
+  const $ = <T extends HTMLElement>(selector: string) => root.querySelector<T>(selector)!;
+  const initial = JSON.parse(root.dataset.initial!);
+
+  const title = $<HTMLTextAreaElement>('[data-title]');
+  const category = $<HTMLInputElement>('[data-category]');
+  const description = $<HTMLInputElement>('[data-description]');
+  const status = $('[data-status]');
+  const fileInput = $<HTMLInputElement>('[data-file]');
+  const coverImage = $<HTMLImageElement>('[data-cover-image]');
+
+  let id: number | null = initial.id;
+  let slug: string | null = initial.slug;
+  let published: boolean = initial.published;
+  let cover: string | null = initial.cover;
+  let dirty = false;
+  // Where the next chosen file goes: the cover, or into the text.
+  let fileTarget: 'cover' | 'body' = 'body';
+
+  async function upload(file: File) {
+    const body = new FormData();
+    body.append('image', file);
+    status.textContent = 'Uploading image…';
+    const response = await fetch('/api/admin/upload', { method: 'POST', body });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error ?? 'The image could not be uploaded.');
+    status.textContent = '';
+    return data.url as string;
+  }
+
+  const showError = (error: unknown) => (status.textContent = (error as Error).message);
+
+  async function insertImages(files: Iterable<File>) {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      const src = await upload(file);
+      editor.chain().focus().setImage({ src }).run();
+    }
+  }
+
+  const editor = new Editor({
+    element: $('[data-body]'),
+    content: initial.content,
+    extensions: [
+      StarterKit.configure({ heading: { levels: [2, 3] }, link: { openOnClick: false } }),
+      Image,
+      Placeholder.configure({ placeholder: 'Tell your story…' }),
+      BubbleMenu.configure({ element: $('[data-bubble]'), options: { placement: 'top-start', offset: 8 } }),
+      // Sits under the empty line so it never covers the caret or placeholder.
+      FloatingMenu.configure({ element: $('[data-insert]'), options: { placement: 'bottom-start', offset: 6 } }),
+    ],
+    editorProps: {
+      attributes: { class: 'prose', 'aria-label': 'Post text' },
+      // Pasting or dropping a picture uploads it and places it in the text.
+      handlePaste: (_view, event) => {
+        const files = [...(event.clipboardData?.files ?? [])];
+        if (!files.some((file) => file.type.startsWith('image/'))) return false;
+        insertImages(files).catch(showError);
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const files = [...(event.dataTransfer?.files ?? [])];
+        if (!files.some((file) => file.type.startsWith('image/'))) return false;
+        event.preventDefault();
+        insertImages(files).catch(showError);
+        return true;
+      },
+    },
+    onUpdate: () => markDirty(),
+    onTransaction: () => refreshButtons(),
+  });
+
+  const commands: Record<string, () => void> = {
+    bold: () => editor.chain().focus().toggleBold().run(),
+    italic: () => editor.chain().focus().toggleItalic().run(),
+    h2: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+    h3: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+    quote: () => editor.chain().focus().toggleBlockquote().run(),
+    list: () => editor.chain().focus().toggleBulletList().run(),
+    divider: () => editor.chain().focus().setHorizontalRule().run(),
+    link: () => {
+      if (editor.isActive('link')) return void editor.chain().focus().unsetLink().run();
+      const href = prompt('Link address', 'https://');
+      if (href && /^(https?:\/\/|mailto:)/.test(href)) editor.chain().focus().setLink({ href }).run();
+    },
+    image: () => {
+      fileTarget = 'body';
+      fileInput.click();
+    },
+  };
+
+  const activeChecks: Record<string, () => boolean> = {
+    bold: () => editor.isActive('bold'),
+    italic: () => editor.isActive('italic'),
+    h2: () => editor.isActive('heading', { level: 2 }),
+    h3: () => editor.isActive('heading', { level: 3 }),
+    quote: () => editor.isActive('blockquote'),
+    link: () => editor.isActive('link'),
+  };
+
+  root.querySelectorAll<HTMLButtonElement>('[data-command]').forEach((button) => {
+    // Keep the text selection when a toolbar button is pressed.
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => commands[button.dataset.command!]());
+  });
+
+  function refreshButtons() {
+    root.querySelectorAll<HTMLButtonElement>('[data-bubble] [data-command]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(activeChecks[button.dataset.command!]?.() ?? false));
+    });
+  }
+
+  function refreshCover() {
+    coverImage.hidden = !cover;
+    if (cover) coverImage.src = cover;
+    $('[data-cover-add]').textContent = cover ? 'Change cover' : '+ Add a cover image';
+    $('[data-cover-remove]').hidden = !cover;
+  }
+
+  function refreshState() {
+    $('[data-state]').textContent = !id ? 'New post' : published ? 'Published' : 'Draft';
+    $('[data-state]').classList.toggle('admin-tag--live', published);
+    $('[data-save="draft"]').textContent = published ? 'Unpublish' : 'Save draft';
+    $('[data-save="publish"]').textContent = published ? 'Update' : 'Publish';
+  }
+
+  function markDirty() {
+    dirty = true;
+    status.textContent = '';
+  }
+
+  const growTitle = () => {
+    title.style.height = 'auto';
+    title.style.height = `${title.scrollHeight}px`;
+  };
+
+  async function save(publish: boolean) {
+    const buttons = root.querySelectorAll<HTMLButtonElement>('[data-save]');
+    buttons.forEach((button) => (button.disabled = true));
+    status.textContent = 'Saving…';
+    try {
+      const response = await fetch(id ? `/api/admin/posts/${id}` : '/api/admin/posts', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.value,
+          category: category.value,
+          description: description.value,
+          cover,
+          content: editor.getHTML(),
+          published: publish,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error ?? 'The post could not be saved.');
+
+      dirty = false;
+      ({ id, slug, published } = data.post);
+      history.replaceState(null, '', `/admin/edit/${id}/`);
+      refreshState();
+      status.textContent = published ? 'Published. ' : 'Draft saved.';
+      if (published) {
+        const link = document.createElement('a');
+        link.href = `${root.dataset.site}/writing/${slug}/`;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'View post';
+        status.append(link);
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      buttons.forEach((button) => (button.disabled = false));
+    }
+  }
+
+  root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((button) =>
+    button.addEventListener('click', () => save(button.dataset.save === 'publish')),
+  );
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (!file) return;
+    try {
+      if (fileTarget === 'cover') {
+        cover = await upload(file);
+        refreshCover();
+        markDirty();
+      } else {
+        await insertImages([file]);
+      }
+    } catch (error) {
+      showError(error);
+    }
+  });
+
+  $('[data-cover-add]').addEventListener('click', () => {
+    fileTarget = 'cover';
+    fileInput.click();
+  });
+
+  $('[data-cover-remove]').addEventListener('click', () => {
+    cover = null;
+    refreshCover();
+    markDirty();
+  });
+
+  title.addEventListener('input', () => {
+    growTitle();
+    markDirty();
+  });
+  title.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    editor.view.dom.focus();
+    editor.commands.focus('start');
+  });
+  category.addEventListener('input', markDirty);
+  description.addEventListener('input', markDirty);
+
+  // Cmd/Ctrl+S saves without changing whether the post is published.
+  document.addEventListener('keydown', (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+      event.preventDefault();
+      save(published);
+    }
+  });
+
+  window.addEventListener('beforeunload', (event) => {
+    if (dirty) event.preventDefault();
+  });
+
+  refreshCover();
+  refreshState();
+  growTitle();
+  if (!id) title.focus();
+</script>

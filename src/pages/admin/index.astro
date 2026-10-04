@@ -1,0 +1,52 @@
+---
+import Icon from '../../components/Icon.astro';
+import Admin from '../../layouts/Admin.astro';
+import { formatDate } from '../../config';
+import { listAll } from '../../lib/posts';
+
+const posts = await listAll();
+const siteUrl = (process.env.SITE_URL ?? '').replace(/\/$/, '');
+---
+
+<Admin title="Posts">
+  <div class="admin-head">
+    <h1 class="page-title">Posts</h1>
+    <a class="btn" href="/admin/new/">Write a post <Icon name="arrow" size={16} /></a>
+  </div>
+
+  {posts.length === 0 && <p class="lead">Nothing here yet. Write your first post.</p>}
+
+  <ul class="admin-posts" data-posts>
+    {posts.map((post) => (
+      <li data-id={post.id}>
+        <a class="admin-posts__title" href={`/admin/edit/${post.id}/`}>{post.title}</a>
+        <span class="admin-posts__meta">
+          <span class:list={['admin-tag', { 'admin-tag--live': post.published }]}>
+            {post.published ? 'Published' : 'Draft'}
+          </span>
+          {post.category} · {formatDate(post.date)}
+        </span>
+        <span class="admin-posts__actions">
+          <a href={`/admin/edit/${post.id}/`}>Edit</a>
+          {post.published && <a href={`${siteUrl}/writing/${post.slug}/`} target="_blank" rel="noopener">View</a>}
+          <button type="button" data-delete data-title={post.title}>Delete</button>
+        </span>
+      </li>
+    ))}
+  </ul>
+  <p class="form__status admin-error" role="alert" data-status></p>
+</Admin>
+
+<script>
+  const status = document.querySelector<HTMLElement>('[data-status]')!;
+
+  document.querySelectorAll<HTMLButtonElement>('[data-delete]').forEach((button) =>
+    button.addEventListener('click', async () => {
+      const item = button.closest<HTMLElement>('li')!;
+      if (!confirm(`Delete "${button.dataset.title}"? This cannot be undone.`)) return;
+      const response = await fetch(`/api/admin/posts/${item.dataset.id}`, { method: 'DELETE' });
+      if (response.ok) item.remove();
+      else status.textContent = (await response.json().catch(() => ({}))).error ?? 'The post could not be deleted.';
+    }),
+  );
+</script>

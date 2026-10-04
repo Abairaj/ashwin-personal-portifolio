@@ -1,0 +1,12 @@
+---
+import Editor from '../../../components/Editor.astro';
+import Admin from '../../../layouts/Admin.astro';
+import { getById } from '../../../lib/posts';
+
+const post = await getById(Number(Astro.params.id) || 0);
+if (!post) return Astro.redirect('/admin/');
+---
+
+<Admin title={post.title}>
+  <Editor post={post} />
+</Admin>

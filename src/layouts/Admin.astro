@@ -1,0 +1,48 @@
+---
+import '@fontsource/poppins/latin-300.css';
+import '@fontsource/poppins/latin-400.css';
+import '@fontsource/poppins/latin-500.css';
+import '@fontsource/poppins/latin-600.css';
+import '@fontsource-variable/playfair-display';
+import '@fontsource/mrs-saint-delafield';
+import '../styles/global.css';
+import '../styles/admin.css';
+import { SITE } from '../config';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const signedIn = Boolean(Astro.locals.admin);
+const siteUrl = process.env.SITE_URL ?? '/';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | {SITE.name} Admin</title>
+  </head>
+  <body class="admin">
+    <header class="admin-bar">
+      <a class="logo" href="/admin/">{SITE.name}</a>
+      {signedIn && (
+        <nav class="admin-bar__nav" aria-label="Admin">
+          <a href="/admin/">Posts</a>
+          <a href="/admin/new/">New post</a>
+          <a href={siteUrl} target="_blank" rel="noopener">View site</a>
+          <form method="post" action="/api/admin/logout">
+            <button type="submit">Sign out</button>
+          </form>
+        </nav>
+      )}
+    </header>
+    <main class="admin-main">
+      <slot />
+    </main>
+  </body>
+</html>

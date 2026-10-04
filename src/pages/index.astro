@@ -6,9 +6,9 @@ import Icon from '../components/Icon.astro';
 import PostGrid from '../components/PostGrid.astro';
 import Base from '../layouts/Base.astro';
 import { SITE, fullUrl, url } from '../config';
-import { getPosts } from '../posts';
+import { listPublishedOrEmpty } from '../lib/posts';
 
-const posts = (await getPosts()).slice(0, 12);
+const posts = await listPublishedOrEmpty(12);
 
 const index = ['Businesses', 'Ideas', 'People', 'Writing', 'A Better Tomorrow'];
 

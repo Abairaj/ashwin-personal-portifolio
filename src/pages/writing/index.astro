@@ -2,9 +2,9 @@
 import PostGrid from '../../components/PostGrid.astro';
 import Base from '../../layouts/Base.astro';
 import { SITE, fullUrl } from '../../config';
-import { getPosts } from '../../posts';
+import { listPublishedOrEmpty } from '../../lib/posts';
 
-const posts = await getPosts();
+const posts = await listPublishedOrEmpty();
 
 const description =
   'Articles by Ashwin Raj K on business, entrepreneurship, technology, AI, systems, construction and life.';
@@ -20,7 +20,7 @@ const jsonLd = [
     blogPost: posts.map((post) => ({
       '@type': 'BlogPosting',
       headline: post.title,
-      url: fullUrl(`/writing/${post.id}/`),
+      url: fullUrl(`/writing/${post.slug}/`),
       datePublished: post.date.toISOString(),
     })),
   },

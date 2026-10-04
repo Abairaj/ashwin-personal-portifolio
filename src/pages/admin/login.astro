@@ -1,0 +1,56 @@
+---
+import Icon from '../../components/Icon.astro';
+import Admin from '../../layouts/Admin.astro';
+import {
+  SESSION_COOKIE,
+  checkLogin,
+  clearFailures,
+  createSession,
+  isConfigured,
+  isLockedOut,
+  recordFailure,
+} from '../../lib/auth';
+
+if (Astro.locals.admin) return Astro.redirect('/admin/');
+
+let error = isConfigured() ? '' : 'The admin account is not set up yet. See DEPLOY.md.';
+
+if (Astro.request.method === 'POST' && isConfigured()) {
+  // nginx passes the visitor's address in X-Real-IP (see DEPLOY.md).
+  const address = Astro.request.headers.get('x-real-ip') ?? Astro.clientAddress;
+  const form = await Astro.request.formData();
+  if (isLockedOut(address)) {
+    error = 'Too many attempts. Please wait 15 minutes and try again.';
+  } else if (checkLogin(String(form.get('username') ?? ''), String(form.get('password') ?? ''))) {
+    clearFailures(address);
+    const session = createSession(process.env.ADMIN_USERNAME!);
+    Astro.cookies.set(SESSION_COOKIE, session.value, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: import.meta.env.PROD && Astro.request.headers.get('x-forwarded-proto') !== 'http',
+      maxAge: session.maxAge,
+    });
+    return Astro.redirect('/admin/', 303);
+  } else {
+    recordFailure(address);
+    error = 'Wrong username or password.';
+  }
+}
+---
+
+<Admin title="Sign in">
+  <form class="admin-login form" method="post">
+    <h1 class="page-title">Sign in.</h1>
+    <label class="form__wide">
+      <span>Username</span>
+      <input name="username" type="text" autocomplete="username" required autofocus />
+    </label>
+    <label class="form__wide">
+      <span>Password</span>
+      <input name="password" type="password" autocomplete="current-password" required />
+    </label>
+    <button class="btn form__wide" type="submit">Sign In <Icon name="arrow" size={16} /></button>
+    {error && <p class="form__status form__wide admin-error" role="alert">{error}</p>}
+  </form>
+</Admin>

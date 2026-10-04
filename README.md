@@ -1,60 +1,68 @@
 # Ashwin Raj K — Portfolio
 
-Static site built with [Astro](https://astro.build). No database: blog posts are Markdown files in this repo.
+An [Astro](https://astro.build) site running as a Node.js server, with blog posts stored in
+PostgreSQL and written through a built-in admin area.
 
 ## Run locally
 
 ```sh
 npm install
-npm run dev      # http://localhost:4321
-npm run build    # output in dist/
+cp .env.example .env     # then fill in; see "Local settings" below
+npm run db:local         # terminal 1: starts a local PostgreSQL (no install needed)
+npm run db:migrate       # once: creates the tables
+npm run db:import        # once, optional: loads the sample posts
+npm run dev              # terminal 2: http://localhost:4321
 ```
 
-## Write a blog post
+### Local settings
 
-**Quickest way, on github.com:** open `src/content/blog/next-blog.md` → pencil icon (Edit) →
-replace the title and text → change the file name at the top from `next-blog.md` to your own
-(e.g. `my-first-post.md`) → Commit changes. The post is published in a minute or two, and a
-fresh `next-blog.md` is put back automatically for the next post.
+In `.env` for local work:
 
-`next-blog.md` itself is never shown on the site, so a post saved without changing the file name
-stays hidden until it is renamed. The template it is restored from is `.github/blog-template.md`.
-
-
-Posts can also be written as plain files: add a `.md` file to `src/content/blog/`. A post only
-needs a title and a date:
-
-```md
----
-title: My Post Title
-date: 2026-10-03
----
-
-Post text in Markdown.
+```ini
+SITE_URL=http://localhost:4321
+ADMIN_HOST=
+DATABASE_URL=postgres://postgres:postgres@localhost:5433/portfolio
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=      # paste the output of: npm run hash-password
+SESSION_SECRET=           # any long random string
 ```
 
-Optional extras, on their own lines between the `---` markers:
+With `ADMIN_HOST` empty, the admin area is at http://localhost:4321/admin/.
 
-| Line | What it does | If left out |
-| --- | --- | --- |
-| `category: Marketing` | Label on the card and a filter chip. Any text works; new ones appear automatically. | `General` |
-| `description: ...` | Summary on cards and in search results. | First paragraph of the post |
-| `cover: images/my-photo.jpg` | Cover image: a file you put in `src/content/blog/images/`, or an image link (`https://...`). | Default image (`src/content/blog/images/default.jpg`) |
-| `draft: true` | Hides the post from the site. | Published |
+## Writing posts
 
-The page address comes from the file name: `My first_post.md` → `/writing/my-first-post/`.
+Sign in to the admin area (in production: the admin subdomain). **Write a post** opens the
+editor:
 
-**From the GitHub website:** open `src/content/blog/` → Add file → Create new file → name it
-`my-post.md` → paste the example above → Commit changes. The site republishes itself in a minute or two.
+- Type the title, press Enter, and write.
+- Select text for bold, italic, headings, quotes and links.
+- On an empty line, use the buttons underneath to insert an image, heading, quote, list or divider.
+  Images can also be pasted or dragged in.
+- **Add a cover image** is optional; posts without one use the default image.
+- **Save draft** keeps it private. **Publish** puts it on the site straight away.
+- The post list has **Edit**, **View** and **Delete** for every post.
 
-## Publish on GitHub Pages
+A post's web address is made from its title when it is first saved and does not change afterwards.
 
-Step-by-step guide: [DEPLOY.md](DEPLOY.md).
+## How it fits together
+
+| Part | Where |
+| --- | --- |
+| Public pages | `src/pages/index.astro`, `src/pages/writing/` |
+| Admin pages and editor | `src/pages/admin/`, `src/components/Editor.astro` |
+| Post API, uploads | `src/pages/api/admin/`, `src/pages/uploads/` |
+| Login, sessions, admin-host rule | `src/lib/auth.ts`, `src/middleware.ts` |
+| Database access | `src/lib/posts.ts`, `db/schema.sql` |
+| Site-wide text and links | `src/config.ts` |
+
+Uploaded images are converted to WebP and stored in `UPLOAD_DIR` on the server.
+
+## Hosting
+
+Step-by-step guide for a Hostinger VPS: [DEPLOY.md](DEPLOY.md).
 
 ## Before launch
 
 - `src/config.ts` — email, social links, business URLs, book URL, optional form endpoint.
-- `src/assets/sample.jpg` — the one placeholder photo used everywhere; replace it, or
-  import different images per section in `src/pages/index.astro`.
-- `src/content/blog/` — the four posts are samples.
-# ashwin-personal-portifolio
+- `src/assets/sample.jpg` — the placeholder photo used across the site and as the default post cover.
+- The five imported posts are samples; delete them in the admin area.

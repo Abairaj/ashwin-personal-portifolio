@@ -1,20 +1,16 @@
 ---
 import { Image } from 'astro:assets';
-import { render } from 'astro:content';
+import sample from '../../assets/sample.jpg';
 import Icon from '../../components/Icon.astro';
 import Base from '../../layouts/Base.astro';
 import { SITE, formatDate, fullUrl, url } from '../../config';
-import { getPosts } from '../../posts';
+import { getPublishedBySlug } from '../../lib/posts';
 
-export async function getStaticPaths() {
-  const posts = await getPosts();
-  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
-}
+const post = await getPublishedBySlug(Astro.params.slug ?? '');
+if (!post) return Astro.rewrite('/404');
 
-const { post } = Astro.props;
-const { Content } = await render(post.entry);
 const { title, description, date: pubDate, updated: updatedDate, category, cover } = post;
-const postUrl = fullUrl(`/writing/${post.id}/`);
+const postUrl = fullUrl(`/writing/${post.slug}/`);
 
 const jsonLd = [
   {
@@ -44,7 +40,7 @@ const jsonLd = [
 <Base
   title={title}
   description={description}
-  image={cover}
+  image={cover ?? undefined}
   type="article"
   article={{ publishedTime: pubDate, modifiedTime: updatedDate, section: category }}
   jsonLd={jsonLd}
@@ -66,17 +62,17 @@ const jsonLd = [
     </header>
 
     <div class="container">
-      <div class:list={['media', 'article__cover', { 'media--dusk': !post.hasCover }]}>
-        {typeof cover === 'string' ? (
+      <div class:list={['media', 'article__cover', { 'media--dusk': !cover }]}>
+        {cover ? (
           <img src={cover} alt="" />
         ) : (
-          <Image src={cover} alt="" widths={[640, 1000, 1600]} sizes="(min-width: 1240px) 1128px, 100vw" width={1600} height={700} loading="eager" />
+          <Image src={sample} alt="" widths={[640, 1000, 1600]} sizes="(min-width: 1240px) 1128px, 100vw" width={1600} height={700} loading="eager" />
         )}
       </div>
     </div>
 
     <div class="container prose">
-      <Content />
+      <Fragment set:html={post.content} />
     </div>
 
     <footer class="container article__foot">

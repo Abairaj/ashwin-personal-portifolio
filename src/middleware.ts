@@ -1,0 +1,51 @@
+import { defineMiddleware } from 'astro:middleware';
+import { SESSION_COOKIE, verifySession } from './lib/auth';
+
+const notFound = () => new Response('Not found', { status: 404 });
+const hostOnly = (value: string | null) => (value ?? '').split(':')[0].toLowerCase();
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  const { pathname } = context.url;
+  const { headers, method } = context.request;
+  const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/api/admin/');
+
+  // With ADMIN_HOST set, the admin area exists only on that host name, and
+  // that host serves nothing but the admin area and the files it needs.
+  const adminHost = process.env.ADMIN_HOST?.toLowerCase();
+  if (adminHost) {
+    const onAdminHost = hostOnly(headers.get('host')) === adminHost;
+    if (isAdminPath && !onAdminHost) return notFound();
+    if (onAdminHost && !isAdminPath) {
+      if (pathname === '/') return context.redirect('/admin/');
+      const isAsset = /^\/(_astro|_image|uploads)\b/.test(pathname) || pathname === '/favicon.svg';
+      if (!isAsset) return notFound();
+    }
+  }
+
+  if (!isAdminPath) return next();
+
+  // Changes must come from the admin pages themselves, not from another site.
+  if (method !== 'GET' && method !== 'HEAD') {
+    const origin = headers.get('origin');
+    if (!origin || new URL(origin).host !== headers.get('host')) {
+      return new Response('Forbidden', { status: 403 });
+    }
+  }
+
+  const session = verifySession(context.cookies.get(SESSION_COOKIE)?.value);
+  context.locals.admin = session?.username;
+
+  const isLogin = pathname.replace(/\/$/, '') === '/admin/login';
+  if (!session && !isLogin) {
+    return pathname.startsWith('/api/')
+      ? Response.json({ error: 'Please sign in again.' }, { status: 401 })
+      : context.redirect('/admin/login/');
+  }
+
+  const response = await next();
+  response.headers.set('Cache-Control', 'no-store');
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  return response;
+});
