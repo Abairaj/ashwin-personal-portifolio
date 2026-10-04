@@ -1,6 +1,7 @@
 ---
 import Icon from '../components/Icon.astro';
 import Base from '../layouts/Base.astro';
+import { url } from '../config';
 ---
 
 <Base title="Page not found" noindex>
@@ -10,8 +11,8 @@ import Base from '../layouts/Base.astro';
       <h1 class="page-title">This page doesn't exist.</h1>
       <p class="lead">The link may be old, or the page may have moved.</p>
       <div class="actions">
-        <a class="btn" href="/">Back Home <Icon name="arrow" size={16} /></a>
-        <a class="btn btn--outline" href="/writing/">Read My Writing <Icon name="arrow" size={16} /></a>
+        <a class="btn" href={url('/')}>Back Home <Icon name="arrow" size={16} /></a>
+        <a class="btn btn--outline" href={url('/writing/')}>Read My Writing <Icon name="arrow" size={16} /></a>
       </div>
     </div>
   </section>

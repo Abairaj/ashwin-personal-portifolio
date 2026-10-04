@@ -49,13 +49,7 @@ The page address comes from the file name: `My first_post.md` → `/writing/my-f
 
 ## Publish on GitHub Pages
 
-1. Create a GitHub repo named `<username>.github.io` and push this folder to `main`.
-2. In the repo: Settings → Pages → Source → **GitHub Actions**.
-3. Every push to `main` rebuilds and publishes the site at `https://<username>.github.io`.
-
-The site address is picked up from the GitHub username during the build. For a custom
-domain later, add `SITE_URL: https://example.com` under `env:` in the build job of
-`.github/workflows/deploy.yml`.
+Step-by-step guide: [DEPLOY.md](DEPLOY.md).
 
 ## Before launch
 

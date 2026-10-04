@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import { render } from 'astro:content';
 import Icon from '../../components/Icon.astro';
 import Base from '../../layouts/Base.astro';
-import { SITE, formatDate } from '../../config';
+import { SITE, formatDate, fullUrl, url } from '../../config';
 import { getPosts } from '../../posts';
 
 export async function getStaticPaths() {
@@ -14,7 +14,7 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post.entry);
 const { title, description, date: pubDate, updated: updatedDate, category, cover } = post;
-const url = new URL(`/writing/${post.id}/`, Astro.site).href;
+const postUrl = fullUrl(`/writing/${post.id}/`);
 
 const jsonLd = [
   {
@@ -25,17 +25,17 @@ const jsonLd = [
     datePublished: pubDate.toISOString(),
     dateModified: (updatedDate ?? pubDate).toISOString(),
     articleSection: category,
-    mainEntityOfPage: url,
-    author: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
-    publisher: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
+    mainEntityOfPage: postUrl,
+    author: { '@type': 'Person', name: SITE.name, url: fullUrl('/') },
+    publisher: { '@type': 'Person', name: SITE.name, url: fullUrl('/') },
   },
   {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: Astro.site!.href },
-      { '@type': 'ListItem', position: 2, name: 'Writing', item: new URL('/writing/', Astro.site).href },
-      { '@type': 'ListItem', position: 3, name: title, item: url },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: fullUrl('/') },
+      { '@type': 'ListItem', position: 2, name: 'Writing', item: fullUrl('/writing/') },
+      { '@type': 'ListItem', position: 3, name: title, item: postUrl },
     ],
   },
 ];
@@ -52,7 +52,7 @@ const jsonLd = [
   <article class="article">
     <header class="container article__head">
       <nav class="eyebrow breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Home</a> / <a href="/writing/">Writing</a> / <span>{category}</span>
+        <a href={url('/')}>Home</a> / <a href={url('/writing/')}>Writing</a> / <span>{category}</span>
       </nav>
       <h1 class="page-title">{title}</h1>
       <p class="lead">{description}</p>
@@ -80,8 +80,8 @@ const jsonLd = [
     </div>
 
     <footer class="container article__foot">
-      <a class="btn btn--outline" href="/writing/">All Articles <Icon name="arrow" size={16} /></a>
-      <a class="btn" href="/#contact">Let's Connect <Icon name="arrow" size={16} /></a>
+      <a class="btn btn--outline" href={url('/writing/')}>All Articles <Icon name="arrow" size={16} /></a>
+      <a class="btn" href={url('/#contact')}>Let's Connect <Icon name="arrow" size={16} /></a>
     </footer>
   </article>
 </Base>

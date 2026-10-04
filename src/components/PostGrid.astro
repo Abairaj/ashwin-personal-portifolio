@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { formatDate } from '../config';
+import { formatDate, url } from '../config';
 import type { Post } from '../posts';
 
 interface Props {
@@ -24,7 +24,7 @@ const used = [...new Set(posts.map((p) => p.category))];
   <ul class="post-grid">
     {posts.map((post, i) => (
       <li class="post-card" data-category={post.category} hidden={i >= limit}>
-        <a href={`/writing/${post.id}/`}>
+        <a href={url(`/writing/${post.id}/`)}>
           <div class="post-card__media">
             <div class:list={['media', { 'media--dusk': !post.hasCover }]}>
               {typeof post.cover === 'string' ? (

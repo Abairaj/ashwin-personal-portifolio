@@ -33,6 +33,14 @@ export const NAV = [
   { label: 'Contact', href: '/#contact' },
 ];
 
+// The site may be served from a sub-path (e.g. /repo-name/ on GitHub Pages),
+// so internal links go through url() instead of being written as "/…".
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+export const url = (path = '/') => `${BASE}${path}`;
+
+export const fullUrl = (path = '/') => new URL(url(path), import.meta.env.SITE).href;
+
 export function readingTime(body = '') {
   return Math.max(1, Math.round(body.split(/\s+/).filter(Boolean).length / 200));
 }

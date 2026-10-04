@@ -5,7 +5,7 @@ import sample from '../assets/sample.jpg';
 import Icon from '../components/Icon.astro';
 import PostGrid from '../components/PostGrid.astro';
 import Base from '../layouts/Base.astro';
-import { SITE } from '../config';
+import { SITE, fullUrl, url } from '../config';
 import { getPosts } from '../posts';
 
 const posts = (await getPosts()).slice(0, 12);
@@ -36,7 +36,7 @@ const reasons = [
 ] as const;
 
 const sameAs = Object.values(SITE.social).filter(Boolean);
-const siteUrl = Astro.site!.href;
+const siteUrl = fullUrl('/');
 const jsonLd = [
   {
     '@context': 'https://schema.org',
@@ -91,7 +91,7 @@ const jsonLd = [
             </p>
             <div class="actions">
               <a class="btn" href="#businesses">Explore My Work <Icon name="arrow" size={16} /></a>
-              <a class="link" href="/writing/"><Icon name="lines" size={16} /> Read My Writing</a>
+              <a class="link" href={url('/writing/')}><Icon name="lines" size={16} /> Read My Writing</a>
             </div>
           </div>
         </div>
@@ -296,7 +296,7 @@ const jsonLd = [
           <h2>Thoughts, Lessons &amp; Observations.</h2>
         </div>
         <p>Ideas on business, entrepreneurship, technology, systems, infrastructure and life.</p>
-        <a class="btn btn--outline" href="/writing/">Read All Articles <Icon name="arrow" size={16} /></a>
+        <a class="btn btn--outline" href={url('/writing/')}>Read All Articles <Icon name="arrow" size={16} /></a>
       </div>
       <PostGrid posts={posts} limit={4} />
     </div>
@@ -313,7 +313,7 @@ const jsonLd = [
       </div>
       <div class="vision__copy">
         <p>More businesses.<br />More possibilities.<br />More people.<br />A meaningful impact.</p>
-        <a class="btn btn--outline btn--dark" href="/writing/">Read My Thinking <Icon name="arrow" size={16} /></a>
+        <a class="btn btn--outline btn--dark" href={url('/writing/')}>Read My Thinking <Icon name="arrow" size={16} /></a>
       </div>
     </div>
   </section>

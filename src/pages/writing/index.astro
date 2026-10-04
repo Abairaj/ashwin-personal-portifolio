@@ -1,7 +1,7 @@
 ---
 import PostGrid from '../../components/PostGrid.astro';
 import Base from '../../layouts/Base.astro';
-import { SITE } from '../../config';
+import { SITE, fullUrl } from '../../config';
 import { getPosts } from '../../posts';
 
 const posts = await getPosts();
@@ -14,13 +14,13 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'Blog',
     name: `${SITE.name} — Writing`,
-    url: new URL('/writing/', Astro.site).href,
+    url: fullUrl('/writing/'),
     description,
-    author: { '@type': 'Person', name: SITE.name, url: Astro.site!.href },
+    author: { '@type': 'Person', name: SITE.name, url: fullUrl('/') },
     blogPost: posts.map((post) => ({
       '@type': 'BlogPosting',
       headline: post.title,
-      url: new URL(`/writing/${post.id}/`, Astro.site).href,
+      url: fullUrl(`/writing/${post.id}/`),
       datePublished: post.date.toISOString(),
     })),
   },
